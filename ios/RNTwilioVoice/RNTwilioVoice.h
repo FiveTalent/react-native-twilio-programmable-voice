@@ -7,5 +7,7 @@
 #import <React/RCTEventEmitter.h>
 
 @interface RNTwilioVoice : RCTEventEmitter <RCTBridgeModule>
-
++ (RNTwilioVoice *) sharedInstance;
+- (void) configureCallKit;
+- (void) initPushRegistry;
 @end

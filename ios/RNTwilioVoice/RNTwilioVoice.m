@@ -21,18 +21,38 @@
 @property (nonatomic, strong) CXCallController *callKitCallController;
 @end
 
-@implementation RNTwilioVoice {
-  NSMutableDictionary *_settings;
-  NSMutableDictionary *_callParams;
-  NSString *_tokenUrl;
-  NSString *_token;
-}
+@implementation RNTwilioVoice
+NSMutableDictionary *_settings;
+NSMutableDictionary *_callParams;
+NSString *_tokenUrl;
+NSString *_token;
+
+static RNTwilioVoice *singletonObj = nil;
 
 NSString * const StatePending = @"PENDING";
 NSString * const StateConnecting = @"CONNECTING";
 NSString * const StateConnected = @"CONNECTED";
 NSString * const StateDisconnected = @"DISCONNECTED";
 NSString * const StateRejected = @"REJECTED";
+
++ (id) sharedInstance {
+  if(!singletonObj) {
+    singletonObj = [[RNTwilioVoice alloc] init];
+  }
+
+    NSLog(@"================ SHARED INSTANCE REFERENCED ====================");
+
+    return singletonObj;
+}
+
+- (id)init {
+  if(! singletonObj) {
+     singletonObj = [super init];
+  }
+
+    NSLog(@"+~+~+~+~+~+~+~+~+~+~+ INIT CALLED +~+~+~+~+~+~+~+~+~+~+~+~+");
+    return singletonObj;
+}
 
 - (dispatch_queue_t)methodQueue
 {
@@ -191,6 +211,22 @@ RCT_REMAP_METHOD(getActiveCall,
   }
 }
 
+- (void)configureCallKit {
+  if (self.callKitCallController == nil) {
+    CXProviderConfiguration *configuration = [[CXProviderConfiguration alloc] initWithLocalizedName:@"R10"];
+    configuration.maximumCallGroups = 1;
+    configuration.maximumCallsPerCallGroup = 1;
+    configuration.supportsVideo = false;
+
+    _callKitProvider = [[CXProvider alloc] initWithConfiguration:configuration];
+    [_callKitProvider setDelegate:self queue:nil];
+
+    NSLog(@"CallKit Initialized");
+
+    self.callKitCallController = [[CXCallController alloc] init];
+  }
+}
+
 - (void)initPushRegistry {
   self.voipRegistry = [[PKPushRegistry alloc] initWithQueue:dispatch_get_main_queue()];
   self.voipRegistry.delegate = self;
@@ -214,7 +250,7 @@ RCT_REMAP_METHOD(getActiveCall,
 
   if ([type isEqualToString:PKPushTypeVoIP]) {
     const unsigned *tokenBytes = [credentials.token bytes];
-    self.deviceTokenString = [NSString stringWithFormat:@"<%08x %08x %08x %08x %08x %08x %08x %08x>", 
+    self.deviceTokenString = [NSString stringWithFormat:@"<%08x %08x %08x %08x %08x %08x %08x %08x>",
                                                         ntohl(tokenBytes[0]), ntohl(tokenBytes[1]), ntohl(tokenBytes[2]),
                                                         ntohl(tokenBytes[3]), ntohl(tokenBytes[4]), ntohl(tokenBytes[5]),
                                                         ntohl(tokenBytes[6]), ntohl(tokenBytes[7])];
@@ -229,10 +265,20 @@ RCT_REMAP_METHOD(getActiveCall,
                                                    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
                                                    [params setObject:[error localizedDescription] forKey:@"err"];
 
-                                                   [self sendEventWithName:@"deviceNotReady" body:params];
+                                                     @try {
+                                                         [self sendEventWithName:@"deviceNotReady" body:params];
+                                                     }
+                                                     @catch(NSException * e) {
+                                                         NSLog(@"ERROR SENDING REACT EVENT: %@", e.reason);
+                                                     }
                                                  } else {
                                                    NSLog(@"Successfully registered for VoIP push notifications.");
-                                                   [self sendEventWithName:@"deviceReady" body:nil];
+                                                     @try {
+                                                         [self sendEventWithName:@"deviceReady" body:nil];
+                                                     }
+                                                     @catch(NSException * e) {
+                                                         NSLog(@"ERROR SENDING REACT EVENT: %@", e.reason);
+                                                     }
                                                  }
                                                }];
   }
@@ -314,7 +360,13 @@ RCT_REMAP_METHOD(getActiveCall,
   } else if (self.callInvite.state == TVOCallInviteStateRejected) {
     [params setObject:StateRejected forKey:@"call_state"];
   }
-  [self sendEventWithName:@"connectionDidDisconnect" body:params];
+
+    @try {
+        [self sendEventWithName:@"connectionDidDisconnect" body:params];
+    }
+    @catch(NSException * e) {
+        NSLog(@"ERROR SENDING REACT EVENT: %@", e.reason);
+    }
 
   self.callInvite = nil;
 }
@@ -343,7 +395,13 @@ RCT_REMAP_METHOD(getActiveCall,
   if (call.to){
     [callParams setObject:call.to forKey:@"to"];
   }
-  [self sendEventWithName:@"connectionDidConnect" body:callParams];
+
+    @try {
+        [self sendEventWithName:@"connectionDidConnect" body:callParams];
+    }
+    @catch(NSException * e) {
+        NSLog(@"ERROR SENDING REACT EVENT: %@", e.reason);
+    }
 }
 
 - (void)call:(TVOCall *)call didFailToConnectWithError:(NSError *)error {
@@ -382,7 +440,13 @@ RCT_REMAP_METHOD(getActiveCall,
   if (self.call.state == TVOCallStateDisconnected) {
     [params setObject:StateDisconnected forKey:@"call_state"];
   }
-  [self sendEventWithName:@"connectionDidDisconnect" body:params];
+
+    @try {
+        [self sendEventWithName:@"connectionDidDisconnect" body:params];
+    }
+    @catch(NSException * e) {
+        NSLog(@"ERROR SENDING REACT EVENT: %@", e.reason);
+    }
 
   self.call = nil;
   self.callKitCompletionCallback = nil;
@@ -480,7 +544,13 @@ RCT_REMAP_METHOD(getActiveCall,
   TwilioVoice.audioEnabled = NO;
 
   if (self.callInvite && self.callInvite.state == TVOCallInviteStatePending) {
-    [self sendEventWithName:@"callRejected" body:@"callRejected"];
+      @try {
+          [self sendEventWithName:@"callRejected" body:@"callRejected"];
+      }
+      @catch(NSException * e) {
+          NSLog(@"ERROR SENDING REACT EVENT: %@", e.reason);
+      }
+
     [self.callInvite reject];
     self.callInvite = nil;
   } else if (self.call) {
