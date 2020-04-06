@@ -35,6 +35,11 @@ NSString * const StateConnected = @"CONNECTED";
 NSString * const StateDisconnected = @"DISCONNECTED";
 NSString * const StateRejected = @"REJECTED";
 
++ (BOOL)requiresMainQueueSetup
+{
+    return YES;
+}
+
 + (id) sharedInstance {
   if(!singletonObj) {
     singletonObj = [[RNTwilioVoice alloc] init];
