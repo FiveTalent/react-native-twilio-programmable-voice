@@ -604,8 +604,12 @@ RCT_REMAP_METHOD(getActiveCall,
 }
 
 - (void)reportIncomingCallFrom:(NSString *)from withUUID:(NSUUID *)uuid {
+  
   NSString *callerIdWithUnderscores = [from stringByReplacingOccurrencesOfString:@"client:" withString:@""];
-  NSString *callerId = [callerIdWithUnderscores stringByReplacingOccurrencesOfString:@"_" withString:@" "];
+  NSString *callerIdGroupVideoFormatted = [callerIdWithUnderscores stringByReplacingOccurrencesOfString:@"_GroupVideo" withString:@": Group Video Call"];
+  NSString *callerIdGroupFormatted = [callerIdGroupVideoFormatted stringByReplacingOccurrencesOfString:@"_Group" withString:@": Group Call"]; 
+  NSString *callerIdVideoFormatted = [callerIdGroupFormatted stringByReplacingOccurrencesOfString:@"_Video" withString:@": Video Call"];
+  NSString *callerId = [callerIdVideoFormatted stringByReplacingOccurrencesOfString:@"_" withString:@" "];
 
   CXHandle *callHandle = [[CXHandle alloc] initWithType:CXHandleTypeGeneric value:callerId];
 
