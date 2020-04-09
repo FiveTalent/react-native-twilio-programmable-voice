@@ -438,8 +438,9 @@ public class TwilioVoiceModule extends ReactContextBaseJavaModule implements Act
                             if (BuildConfig.DEBUG) {
                                 Log.d(TAG, "creating a missed call, activeCallInvite state: " + activeCallInvite.getState());
                             }
-                            callNotificationManager.createMissedCallNotification(getReactApplicationContext(), activeCallInvite);
+                            
                             int appImportance = callNotificationManager.getApplicationImportance(getReactApplicationContext());
+                            
                             if (appImportance != RunningAppProcessInfo.IMPORTANCE_BACKGROUND) {
                                 WritableMap params = Arguments.createMap();
                                 params.putString("call_sid", activeCallInvite.getCallSid());
