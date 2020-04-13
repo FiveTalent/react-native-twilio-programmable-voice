@@ -87,8 +87,12 @@ const Twilio = {
             TwilioVoice.requestPermissions(senderId)
         }
     },
-    getActiveCall() {
-        return TwilioVoice.getActiveCall()
+    getActiveCall() { 
+        try {
+            return TwilioVoice.getActiveCall();
+        } catch(error) {
+            return null;
+        }
     },
     configureCallKit(params = {}) {
         if (Platform.OS === IOS) {
