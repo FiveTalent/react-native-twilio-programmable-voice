@@ -66,54 +66,63 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
 
                 @Override
                 public void onCallInvite(final CallInvite callInvite) {
+                    try {
+                        // We need to run this on the main thread, as the React code assumes that is true.
+                        // Namely, DevServerHelper constructs a Handler() without a Looper, which triggers:
+                        // "Can't create handler inside thread that has not called Looper.prepare()"
+                        Handler handler = new Handler(Looper.getMainLooper());
+                        handler.post(new Runnable() {
+                            public void run() {
+                                // Construct and load our normal React JS code bundle
+                                ReactInstanceManager mReactInstanceManager = ((ReactApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
 
-                    // We need to run this on the main thread, as the React code assumes that is true.
-                    // Namely, DevServerHelper constructs a Handler() without a Looper, which triggers:
-                    // "Can't create handler inside thread that has not called Looper.prepare()"
-                    Handler handler = new Handler(Looper.getMainLooper());
-                    handler.post(new Runnable() {
-                        public void run() {
-                            // Construct and load our normal React JS code bundle
-                            ReactInstanceManager mReactInstanceManager = ((ReactApplication) getApplication()).getReactNativeHost().getReactInstanceManager();
-                            ReactContext context = mReactInstanceManager.getCurrentReactContext();
-                            // If it's constructed, send a notification
-                            if (context != null) {
-                                int appImportance = callNotificationManager.getApplicationImportance((ReactApplicationContext)context);
-                                if (BuildConfig.DEBUG) {
-                                    Log.d(TAG, "CONTEXT present appImportance = " + appImportance);
+                                if(mReactInstanceManager == null) {
+                                    return;
                                 }
-                                Intent launchIntent = callNotificationManager.getLaunchIntent(
-                                        (ReactApplicationContext)context,
-                                        notificationId,
-                                        callInvite,
-                                        false,
-                                        appImportance
-                                );
-                                // app is not in foreground
-                                if (appImportance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                                    context.startActivity(launchIntent);
-                                }
-                                VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
-                            } else {
-                                // Otherwise wait for construction, then handle the incoming call
-                                mReactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
-                                    public void onReactContextInitialized(ReactContext context) {
-                                        int appImportance = callNotificationManager.getApplicationImportance((ReactApplicationContext)context);
-                                        if (BuildConfig.DEBUG) {
-                                            Log.d(TAG, "CONTEXT not present appImportance = " + appImportance);
-                                        }
-                                        Intent launchIntent = callNotificationManager.getLaunchIntent((ReactApplicationContext)context, notificationId, callInvite, true, appImportance);
-                                        context.startActivity(launchIntent);
-                                        VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
+
+                                ReactContext context = mReactInstanceManager.getCurrentReactContext();
+
+                                // If it's constructed, send a notification
+                                if (context != null) {
+                                    int appImportance = callNotificationManager.getApplicationImportance((ReactApplicationContext)context);
+                                    if (BuildConfig.DEBUG) {
+                                        Log.d(TAG, "CONTEXT present appImportance = " + appImportance);
                                     }
-                                });
-                                if (!mReactInstanceManager.hasStartedCreatingInitialContext()) {
-                                    // Construct it in the background
-                                    mReactInstanceManager.createReactContextInBackground();
+                                    Intent launchIntent = callNotificationManager.getLaunchIntent(
+                                            (ReactApplicationContext)context,
+                                            notificationId,
+                                            callInvite,
+                                            false,
+                                            appImportance
+                                    );
+                                    // app is not in foreground
+                                    if (appImportance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                                        context.startActivity(launchIntent);
+                                    }
+                                    VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
+                                } else {
+                                    // Otherwise wait for construction, then handle the incoming call
+                                    mReactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
+                                        public void onReactContextInitialized(ReactContext context) {
+                                            int appImportance = callNotificationManager.getApplicationImportance((ReactApplicationContext)context);
+                                            if (BuildConfig.DEBUG) {
+                                                Log.d(TAG, "CONTEXT not present appImportance = " + appImportance);
+                                            }
+                                            Intent launchIntent = callNotificationManager.getLaunchIntent((ReactApplicationContext)context, notificationId, callInvite, true, appImportance);
+                                            context.startActivity(launchIntent);
+                                            VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
+                                        }
+                                    });
+                                    if (!mReactInstanceManager.hasStartedCreatingInitialContext()) {
+                                        // Construct it in the background
+                                        mReactInstanceManager.createReactContextInBackground();
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    } catch(Exception e) {
+                        Log.e(TAG, "ERROR Handing incoming call notification: " + e.getMessage())
+                    }
                 }
 
                 @Override
