@@ -121,7 +121,7 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
                             }
                         });
                     } catch(Exception e) {
-                        Log.e(TAG, "ERROR Handing incoming call notification: " + e.getMessage())
+                        Log.e(TAG, "ERROR Handing incoming call notification: " + e.getMessage());
                     }
                 }
 
