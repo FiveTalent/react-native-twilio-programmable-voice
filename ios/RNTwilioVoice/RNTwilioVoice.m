@@ -99,9 +99,8 @@ RCT_EXPORT_METHOD(configureCallKit: (NSDictionary *)params) {
     CXProviderConfiguration *configuration = [[CXProviderConfiguration alloc] initWithLocalizedName:params[@"appName"]];
     configuration.maximumCallGroups = 1;
     configuration.maximumCallsPerCallGroup = 1;
-    if (_settings[@"imageName"]) {
-      configuration.iconTemplateImageData = UIImagePNGRepresentation([UIImage imageNamed:_settings[@"imageName"]]);
-    }
+    configuration.iconTemplateImageData = UIImagePNGRepresentation([UIImage imageNamed:@"open_r10"]);
+
     if (_settings[@"ringtoneSound"]) {
       configuration.ringtoneSound = _settings[@"ringtoneSound"];
     }
@@ -222,6 +221,7 @@ RCT_REMAP_METHOD(getActiveCall,
     configuration.maximumCallGroups = 1;
     configuration.maximumCallsPerCallGroup = 1;
     configuration.supportsVideo = false;
+    configuration.iconTemplateImageData = UIImagePNGRepresentation([UIImage imageNamed:@"open_r10"]);
 
     _callKitProvider = [[CXProvider alloc] initWithConfiguration:configuration];
     [_callKitProvider setDelegate:self queue:nil];
